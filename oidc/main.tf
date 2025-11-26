@@ -1,11 +1,6 @@
-data "tls_certificate" "github_actions" {
+# Import existing OIDC provider instead of creating new one
+data "aws_iam_openid_connect_provider" "github_oidc_provider" {
   url = "https://token.actions.githubusercontent.com"
-}
-
-resource "aws_iam_openid_connect_provider" "github_oidc_provider" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
 }
 
 data "aws_iam_policy_document" "github_oidc_assume_role" {
@@ -15,7 +10,7 @@ data "aws_iam_policy_document" "github_oidc_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_oidc_provider.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github_oidc_provider.arn]
     }
 
     condition {
@@ -34,7 +29,7 @@ data "aws_iam_policy_document" "github_oidc_assume_role" {
 
 # Create the IAM role itself using the trust policy defined above.
 resource "aws_iam_role" "github_actions_role" {
-  name               = "GitHub-Actions-OIDC-Role"
+  name               = "GitHub-Actions-Terraform-Drift-Role"
   assume_role_policy = data.aws_iam_policy_document.github_oidc_assume_role.json
 }
 
